@@ -1,0 +1,210 @@
+#include <stdlib.h>
+#include <iostream>
+#include <stdio.h>
+#include <ctime>
+#include <vector>
+#include <conio.h>
+#include <direct.h>
+#include <io.h>
+
+//OpenCV headers
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+
+using namespace std;
+//OpenCV
+using namespace cv;
+
+int main()
+{
+    std::cout << "Hello Hongik EE !\n";
+
+    std::string Path("./output/");
+    const char* Path_c = Path.c_str();
+    if (_access(Path_c, 0) == -1)
+        _mkdir(Path_c);
+
+
+
+    //단일 이미지 띄우기
+#if 0
+    Mat img = imread("./input/Lenna.png"); //자신이 저장시킨 이미지 이름이 입력되어야 함, 확장자까지
+
+    imshow("img", img);
+    waitKey(0);
+
+    return 0;
+
+#endif
+
+
+    //webcam only
+#if 0
+    VideoCapture capture(0);
+
+    Mat myImage;
+    int save_cnt = 0;
+
+    while (1)
+    {
+        capture >> myImage;
+
+        imshow("HEY, Mr/Ms EE Hongik", myImage);
+        int c = cv::waitKey(1);
+
+        // image save
+        char key = waitKey(1); // 1ms 대기 후 키 입력 대기
+        if (key == 's') // 's' 키를 누르면
+        {
+            string filename = Path + to_string(save_cnt) + ".jpg"; // 파일 이름 생성
+            imwrite(filename, myImage); // 프레임을 이미지로 저장
+            cout << filename << "을(를) 저장했습니다." << endl;
+            save_cnt++; // 파일 이름에 사용할 번호 증가
+        }
+        else if (key == 27) // ESC 키를 누르면
+        {
+            break; // 루프 종료
+        }
+    }
+
+#endif
+
+
+    //haar casacade face detector only
+#if 1 // harr casacade face detection
+    VideoCapture cap(0);
+
+    // 카메라 구동확인
+    if (!cap.isOpened()) {
+        cerr << "Could not open camera" << std::endl;
+        return -1;
+    }
+
+    // create a window
+    namedWindow("webcam", 1);
+
+    // face detection configuration
+    CascadeClassifier face_classifier;
+
+    face_classifier.load("./inputDataFiles/haarcascades/haarcascade_frontalface_alt2.xml");//opencv path 입력
+
+    Mat frame;
+    int save_cnt = 0;
+    int count = 0; // 이미지 파일 이름에 사용할 번호
+    bool saving = false; // 이미지 저장 중 여부를 나타내는 변
+
+    for (; ; ) {
+        bool frame_valid = true;  //frame이 유효한지 flag 검사
+
+        try {
+            // get a new frame from webcam
+            cap >> frame;
+        }
+        catch (Exception& e) {
+            cerr << "Exception occurred. Ignoring frame... " << e.err << endl;
+            frame_valid = false;
+        }
+
+        // detector start
+        if (frame_valid) {
+            try {
+
+                clock_t start = clock(); //시간측정
+
+                // convert captured frame to gray scale & equalize
+                Mat grayframe;
+                cvtColor(frame, grayframe, COLOR_RGB2GRAY);
+                equalizeHist(grayframe, grayframe); //histogram이 뭔지 조사
+                // -------------------------------------------------------------
+                // face detection routine
+
+                // a vector array to store the face found
+                vector<Rect> faces;
+
+                face_classifier.detectMultiScale(grayframe, faces,
+                    1.1, // increase search scale by 10% each pass
+                    3,   // merge groups of three detections
+                    //                    CV_HAAR_FIND_BIGGEST_OBJECT | CV_HAAR_SCALE_IMAGE,
+                    CASCADE_FIND_BIGGEST_OBJECT | CASCADE_SCALE_IMAGE, Size(30, 30) // 최소 사이즈 측정
+                );
+
+                // -------------------------------------------------------------
+                // draw the results
+                for (int i = 0; i < faces.size(); i++) {
+                    Point lb(faces[i].x + faces[i].width, faces[i].y + faces[i].height);
+                    Point tr(faces[i].x, faces[i].y);
+
+                    rectangle(frame, lb, tr, Scalar(0, 255, 0), 3, 4, 0);
+                }
+
+                clock_t end = clock();
+
+                cout << "Face Detection running time : \n";
+                //                cout << difftime(end, start) / 1000.0 << " 초\n";
+                //               cout << (double)(end - start) / 1000.0 << " 초\n";
+                cout << (double)(end - start) / CLOCKS_PER_SEC << " 초\n";
+
+                cout << "============================================\n";
+
+                // print the output
+                imshow("webcam", frame);
+
+
+                //                // image save (연속 - opencv fun) - 여러장 시도시 에러 (이미지 창 선택후 's'키)
+                //                char key = waitKey(1); // 1ms 대기 후 키 입력 대기
+                //                if (key == 's' && !saving) // 's' 키를 누르고 이미지 저장 중이 아니면
+                //                {
+                //                    saving = true; // 이미지 저장 중으로 변경
+                ////                    string filename = "captured_image_" + to_string(count) + ".jpg"; // 파일 이름 생성
+                ////                    string filename = "./output/save/" + to_string(count) + ".jpg"; // 파일 이름 생성
+                //                    string filename = Path + to_string(count) + ".jpg"; // 파일 이름 생성
+                //                    
+                //                    imwrite(filename, frame); // 프레임을 이미지로 저장
+                //                    cout << filename << "을(를) 저장했습니다." << endl;
+                //                    count++; // 파일 이름에 사용할 번호 증가
+                //                    saving = false; // 이미지 저장 완료로 변경
+                //                }
+                //                else if (key == 27) // ESC 키를 누르면
+                //                {
+                //                    break; // 루프 종료
+                //                }
+
+
+                                // image save (도스창 선택후 's'키)
+                if (_kbhit() != 0) {
+                    //                    imshow("webcam", frame);
+                    int key = _getch();
+                    if (key == 115) {        //'s' 눌렀을 때 저장, 연속 프레임은 꾹 눌러야함
+                        //                        imshow("webcam", frame);
+                        cv::imwrite(Path + to_string(save_cnt) + ".jpg", frame);
+                        save_cnt++;
+                        continue;
+                    }
+                    else
+                        break;
+                }
+
+
+
+
+
+            }
+            catch (Exception& e) {
+                cerr << "Exception occurred. Ignoring frame... " << e.err << endl;
+            }
+        }
+
+
+        if (waitKey(1) >= 0) break;  //esc 로 끄기
+    }
+
+#endif
+
+
+
+
+}
